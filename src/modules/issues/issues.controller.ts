@@ -73,4 +73,33 @@ const getAllIssues = catchAsync(async (req, res) => {
   });
 });
 
-export const IssueControllers = { createIssue, getAllIssues };
+const getSingleIssue = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const issueResult = await pool.query("SELECT * FROM issues WHERE id = $1", [
+    id,
+  ]);
+  const issue = issueResult.rows[0];
+
+  if (!issue) {
+    throw Object.assign(new Error("Issue not found"), {
+      statusCode: StatusCodes.NOT_FOUND,
+    });
+  }
+
+  const userResult = await pool.query(
+    "SELECT id, name, role FROM users WHERE id = $1",
+    [issue.reporter_id],
+  );
+
+  const { reporter_id, ...issueData } = issue;
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Issue retryeved",
+    data: { ...issueData, reporter: userResult.rows[0] } as any,
+  });
+});
+
+export const IssueControllers = { createIssue, getAllIssues, getSingleIssue };
