@@ -143,9 +143,31 @@ const updateIssue = catchAsync(async (req, res) => {
   });
 });
 
+const deleteIssue = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const result = await pool.query(
+    "DELETE FROM issues WHERE id = $1 RETURNING *",
+    [id],
+  );
+
+  if (result.rowCount === 0) {
+    throw Object.assign(new Error("Not found"), {
+      statusCode: StatusCodes.NOT_FOUND,
+    });
+  }
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Issue deleted successfully",
+  });
+});
+
 export const IssueControllers = {
   createIssue,
   getAllIssues,
   getSingleIssue,
   updateIssue,
+  deleteIssue,
 };
