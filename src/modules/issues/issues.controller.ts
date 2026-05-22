@@ -102,4 +102,50 @@ const getSingleIssue = catchAsync(async (req, res) => {
   });
 });
 
-export const IssueControllers = { createIssue, getAllIssues, getSingleIssue };
+const updateIssue = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+  const user = req.user!; // Extracted from JWT
+
+  const checkResult = await pool.query("SELECT * FROM issues WHERE id = $1", [
+    id,
+  ]);
+  const issue = checkResult.rows[0];
+
+  if (!issue) {
+    throw Object.assign(new Error("Not found"), {
+      statusCode: StatusCodes.NOT_FOUND,
+    });
+  }
+
+  // Permission Logic
+  if (user.role === "contributor") {
+    if (issue.reporter_id !== user.id || issue.status !== "open") {
+      throw Object.assign(new Error("Permission denied to edit this issue"), {
+        statusCode: StatusCodes.CONFLICT,
+      });
+    }
+  }
+
+  const fields = Object.keys(updates);
+  const values = Object.values(updates);
+  const setString = fields.map((field, i) => `${field} = $${i + 1}`).join(", ");
+  values.push(id);
+
+  const updateQuery = `UPDATE issues SET ${setString}, updated_at = CURRENT_TIMESTAMP WHERE id = $${values.length} RETURNING *`;
+  const result = await pool.query(updateQuery, values);
+
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: "Issue updated successfully",
+    data: result.rows[0],
+  });
+});
+
+export const IssueControllers = {
+  createIssue,
+  getAllIssues,
+  getSingleIssue,
+  updateIssue,
+};
