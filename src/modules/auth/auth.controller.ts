@@ -1,3 +1,4 @@
+import { type Request, type Response } from "express";
 import pool from "../../database/index.js";
 import { catchAsync } from "../../utils/catchAsync.js";
 import { sendResponse } from "../../utils/sendResponse.js";
@@ -8,7 +9,7 @@ import {
 } from "../../utils/authUtils.js";
 import { StatusCodes } from "http-status-codes";
 
-const signup = catchAsync(async (req, res) => {
+const signup = catchAsync(async (req: Request, res: Response) => {
   const { name, email, password, role } = req.body;
   const hashedPassword = await hashPassword(password);
   const userRole = role === "maintainer" ? "maintainer" : "contributor";
@@ -26,7 +27,7 @@ const signup = catchAsync(async (req, res) => {
   });
 });
 
-const login = catchAsync(async (req, res) => {
+const login = catchAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   const result = await pool.query("SELECT * FROM users WHERE email = $1", [
@@ -55,7 +56,4 @@ const login = catchAsync(async (req, res) => {
   });
 });
 
-export const AuthControllers = {
-  signup,
-  login,
-};
+export const AuthControllers = { signup, login };
