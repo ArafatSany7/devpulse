@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import config from "../config/index.js"; // MUST have .js extension in ESM
+import config from "../config/index.js";
 
 const pool = new Pool({ connectionString: config.database_url });
 

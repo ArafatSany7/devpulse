@@ -3,6 +3,31 @@ import { catchAsync } from "../../utils/catchAsync.js";
 import { sendResponse } from "../../utils/sendResponse.js";
 import { StatusCodes } from "http-status-codes";
 
+interface IssueRow {
+  id: number;
+  title: string;
+  description: string;
+  type: string;
+  status: string;
+  reporter_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReporterRow {
+  id: number;
+  name: string;
+  role: string;
+}
+
+interface IssueQuery {
+  sort?: "newest" | "oldest";
+  type?: string;
+  status?: string;
+}
+
+type IssueFilterValue = string | number | boolean | null;
+
 const createIssue = catchAsync(async (req, res) => {
   const { title, description, type } = req.body;
   const reporter_id = req.user!.id;
@@ -21,10 +46,10 @@ const createIssue = catchAsync(async (req, res) => {
 });
 
 const getAllIssues = catchAsync(async (req, res) => {
-  const { sort = "newest", type, status } = req.query;
+  const { sort = "newest", type, status } = req.query as IssueQuery;
 
   let query = "SELECT * FROM issues WHERE 1=1";
-  const values: any[] = [];
+  const values: IssueFilterValue[] = [];
   let index = 1;
 
   if (type) {
@@ -42,7 +67,7 @@ const getAllIssues = catchAsync(async (req, res) => {
       : " ORDER BY created_at DESC";
 
   const issueResult = await pool.query(query, values);
-  const issues = issueResult.rows;
+  const issues = issueResult.rows as IssueRow[];
 
   if (issues.length === 0) {
     return sendResponse(res, {
@@ -58,7 +83,9 @@ const getAllIssues = catchAsync(async (req, res) => {
     "SELECT id, name, role FROM users WHERE id = ANY($1)",
     [reporterIds],
   );
-  const usersMap = new Map(usersResult.rows.map((user) => [user.id, user]));
+  const usersMap = new Map<number, ReporterRow>(
+    (usersResult.rows as ReporterRow[]).map((user) => [user.id, user]),
+  );
 
   const formattedData = issues.map((issue) => {
     const { reporter_id, ...issueData } = issue;
@@ -69,7 +96,7 @@ const getAllIssues = catchAsync(async (req, res) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: "Issue retryeved successfully",
-    data: formattedData as any,
+    data: formattedData,
   });
 });
 
@@ -79,7 +106,7 @@ const getSingleIssue = catchAsync(async (req, res) => {
   const issueResult = await pool.query("SELECT * FROM issues WHERE id = $1", [
     id,
   ]);
-  const issue = issueResult.rows[0];
+  const issue = issueResult.rows[0] as IssueRow | undefined;
 
   if (!issue) {
     throw Object.assign(new Error("Issue not found"), {
@@ -98,7 +125,7 @@ const getSingleIssue = catchAsync(async (req, res) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: "Issue retryeved",
-    data: { ...issueData, reporter: userResult.rows[0] } as any,
+    data: { ...issueData, reporter: userResult.rows[0] as ReporterRow },
   });
 });
 
