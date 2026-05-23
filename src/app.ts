@@ -13,8 +13,4 @@ app.use("/api/issues", IssueRoutes);
 app.use(notFound);
 app.use(globalErrorHandler);
 
-// app.get("/api/check", (req, res) => {
-//   res.status(200).json({ success: true, message: "Server is running" });
-// });
-
 export default app;
