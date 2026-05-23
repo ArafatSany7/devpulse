@@ -105,7 +105,7 @@ const getSingleIssue = catchAsync(async (req, res) => {
 const updateIssue = catchAsync(async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
-  const user = req.user!; // Extracted from JWT
+  const user = req.user!;
 
   const checkResult = await pool.query("SELECT * FROM issues WHERE id = $1", [
     id,
@@ -118,7 +118,6 @@ const updateIssue = catchAsync(async (req, res) => {
     });
   }
 
-  // Permission Logic
   if (user.role === "contributor") {
     if (issue.reporter_id !== user.id || issue.status !== "open") {
       throw Object.assign(new Error("Permission denied to edit this issue"), {
